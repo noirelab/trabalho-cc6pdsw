@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { createContactSchema } from "./contacts.schema";
+import { createContactSchema, updateContactSchema } from "./contacts.schema";
 import * as contactsService from "./contacts.service";
 import { authMiddleware } from "../../plugins/auth";
 
@@ -24,6 +24,32 @@ export async function contactsRoutes(app: FastifyInstance) {
     async (_request, reply) => {
       const contacts = await contactsService.listContacts();
       return reply.send({ contacts });
+    }
+  );
+
+  app.put(
+    "/api/contacts/:id",
+    { preHandler: authMiddleware },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const parsed = updateContactSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Dados inválidos",
+          details: parsed.error.flatten().fieldErrors,
+        });
+      }
+
+      try {
+        const contact = await contactsService.updateContact(
+          Number(id),
+          parsed.data
+        );
+        return reply.send({ contact });
+      } catch (err: any) {
+        return reply.status(404).send({ error: err.message });
+      }
     }
   );
 
