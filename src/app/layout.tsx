@@ -35,6 +35,12 @@ export default function RootLayout({
                                 <Link href="/services" className="text-sm font-medium text-gray-600 hover:text-gray-900">
                                     Serviços
                                 </Link>
+                                <Link href="/projects" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                                    Projetos
+                                </Link>
+                                <Link href="/contact" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                                    Contato
+                                </Link>
                             </div>
                         </div>
 

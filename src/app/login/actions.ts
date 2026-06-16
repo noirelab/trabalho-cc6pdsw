@@ -3,20 +3,23 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-export async function login(formData: FormData) {
-  // Simplesmente define um cookie de autenticação mockado
-  const cookieStore = await cookies();
-  cookieStore.set("auth-token", "authenticated", {
-    path: "/",
-    httpOnly: true,
-    maxAge: 60 * 60 * 24, // 1 dia
-  });
-
-  redirect("/dashboard");
-}
+const API_URL = "http://localhost:3001";
 
 export async function logout() {
   const cookieStore = await cookies();
+  const token = cookieStore.get("auth-token");
+
+  if (token) {
+    try {
+      await fetch(`${API_URL}/api/auth/logout`, {
+        method: "POST",
+        headers: { Cookie: `auth-token=${token.value}` },
+      });
+    } catch {
+      // Ignora erro da API, limpa cookie local mesmo assim
+    }
+  }
+
   cookieStore.delete("auth-token");
   redirect("/login");
 }
