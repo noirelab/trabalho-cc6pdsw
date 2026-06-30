@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import { registerCors } from "./plugins/cors";
+import { registerErrorHandler } from "./plugins/error-handler";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { usersRoutes } from "./modules/users/users.routes";
 import { servicesRoutes } from "./modules/services/services.routes";
@@ -12,6 +13,8 @@ export function buildApp() {
   const app = Fastify({ logger: true });
 
   app.register(cookie);
+
+  registerErrorHandler(app);
 
   app.register(async (instance) => {
     await registerCors(instance);
