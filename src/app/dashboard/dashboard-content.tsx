@@ -36,6 +36,7 @@ const contactReplySchema = z.object({
 const projectSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   description: z.string().min(1, "Descrição é obrigatória"),
+  imageUrl: z.string().optional(),
 });
 type ProjectFormData = z.infer<typeof projectSchema>;
 
@@ -49,7 +50,7 @@ type TestimonialFormData = z.infer<typeof testimonialSchema>;
 interface User { id: number; username: string; name: string; }
 interface Service { id: number; title: string; description: string; price: number; createdAt: string; }
 interface Contact { id: number; name: string; email: string; message: string; createdAt: string; }
-interface Project { id: number; title: string; description: string; createdAt: string; }
+interface Project { id: number; title: string; description: string; imageUrl: string; createdAt: string; }
 interface Testimonial { id: number; name: string; role: string; text: string; createdAt: string; }
 
 interface Proposal {
@@ -273,7 +274,7 @@ export default function DashboardContent() {
       });
       if (!res.ok) { setMsg((await res.json()).error || "Erro"); return; }
       setEditingProject(null);
-      projectForm.reset({ title: "", description: "" });
+      projectForm.reset({ title: "", description: "", imageUrl: "" });
       await fetchProjects();
     } catch { setMsg("Erro de conexão"); }
   }
@@ -554,9 +555,30 @@ export default function DashboardContent() {
                 <input id="prj-desc" className={inputClass} placeholder="Descrição do projeto" {...projectForm.register("description")} />
                 {projectForm.formState.errors.description && <p className="text-sm text-destructive">{projectForm.formState.errors.description.message}</p>}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="prj-image">URL da Imagem</Label>
+                <div className="flex gap-2">
+                  <input id="prj-image" className={inputClass} placeholder="https://exemplo.com/imagem.jpg" {...projectForm.register("imageUrl")} />
+                  <input type="file" accept="image/*" className="hidden" id="file-upload" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    try {
+                      const res = await fetch(`${API_URL}/api/upload`, { method: "POST", body: formData, credentials: "include" });
+                      if (res.ok) {
+                        const data = await res.json();
+                        projectForm.setValue("imageUrl", data.url);
+                      }
+                    } catch {}
+                  }} />
+                  <Button type="button" size="sm" variant="outline" onClick={() => (document.getElementById("file-upload") as HTMLInputElement)?.click()}>Upload</Button>
+                </div>
+                {projectForm.formState.errors.imageUrl && <p className="text-sm text-destructive">{projectForm.formState.errors.imageUrl.message}</p>}
+              </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={projectForm.formState.isSubmitting}>{editingProject ? "Atualizar" : "Criar Projeto"}</Button>
-                {editingProject && <Button type="button" variant="outline" onClick={() => { setEditingProject(null); projectForm.reset({ title: "", description: "" }); }}>Cancelar</Button>}
+                {editingProject && <Button type="button" variant="outline" onClick={() => { setEditingProject(null); projectForm.reset({ title: "", description: "", imageUrl: "" }); }}>Cancelar</Button>}
               </div>
             </form>
             {projects.length > 0 && (
@@ -564,12 +586,17 @@ export default function DashboardContent() {
                 <h3 className="font-semibold text-sm text-gray-600">Projetos cadastrados ({projects.length})</h3>
                 {projects.map((p) => (
                   <div key={p.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{p.title}</p>
-                      <p className="text-xs text-gray-500 truncate max-w-md">{p.description}</p>
+                    <div className="flex items-center gap-3">
+                      {p.imageUrl && (
+                        <img src={p.imageUrl} alt={p.title} className="w-12 h-12 rounded object-cover" />
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{p.title}</p>
+                        <p className="text-xs text-gray-500 truncate max-w-md">{p.description}</p>
+                      </div>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="xs" variant="outline" onClick={() => { setEditingProject(p); projectForm.reset({ title: p.title, description: p.description }); }}>Editar</Button>
+                      <Button size="xs" variant="outline" onClick={() => { setEditingProject(p); projectForm.reset({ title: p.title, description: p.description, imageUrl: p.imageUrl || "" }); }}>Editar</Button>
                       <Button size="xs" variant="destructive" onClick={() => deleteProject(p.id)}>Excluir</Button>
                     </div>
                   </div>
