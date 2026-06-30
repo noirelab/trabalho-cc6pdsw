@@ -1,34 +1,39 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from "jsonwebtoken";
+import { UnauthorizedError, ForbiddenError } from "../lib/errors";
 
 const JWT_SECRET = process.env.JWT_SECRET || "unobtainium-super-secret";
 
 export interface JwtPayload {
   userId: number;
   username: string;
-}
-
-declare module "fastify" {
-  interface FastifyRequest {
-    user?: JwtPayload;
-  }
+  role: string;
 }
 
 export async function authMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  _reply: FastifyReply
 ) {
   const token = request.cookies["auth-token"];
 
   if (!token) {
-    return reply.status(401).send({ error: "Não autenticado" });
+    throw new UnauthorizedError("Não autenticado");
   }
 
   try {
     const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
     request.user = payload;
   } catch {
-    return reply.status(401).send({ error: "Token inválido ou expirado" });
+    throw new UnauthorizedError("Token inválido ou expirado");
+  }
+}
+
+export async function requireAdmin(
+  request: FastifyRequest,
+  _reply: FastifyReply
+) {
+  if (!request.user || request.user.role !== "admin") {
+    throw new ForbiddenError("Acesso restrito a administradores");
   }
 }
 
