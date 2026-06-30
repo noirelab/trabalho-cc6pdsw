@@ -51,7 +51,49 @@ interface Contact { id: number; name: string; email: string; message: string; cr
 interface Project { id: number; title: string; description: string; createdAt: string; }
 interface Testimonial { id: number; name: string; role: string; text: string; createdAt: string; }
 
-type Tab = "profile" | "services" | "contacts" | "projects" | "testimonials";
+interface Proposal {
+  id: number;
+  title: string;
+  clientName: string;
+  clientEmail: string;
+  subtotal: number;
+  discount: number;
+  total: number;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items?: ProposalItem[];
+  history?: ProposalHistory[];
+}
+
+interface ProposalItem {
+  id: number;
+  proposalId: number;
+  serviceId: number;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  service: { id: number; title: string; price: number };
+}
+
+interface ProposalHistory {
+  id: number;
+  field: string;
+  oldValue: string | null;
+  newValue: string;
+  createdAt: string;
+  user: { id: number; username: string };
+}
+
+interface ProposalReports {
+  totalProposals: number;
+  byStatus: Record<string, number>;
+  totalRevenue: number;
+  conversionRate: number;
+}
+
+type Tab = "profile" | "services" | "contacts" | "projects" | "testimonials" | "proposals";
 
 export default function DashboardContent() {
   const [tab, setTab] = useState<Tab>("profile");
@@ -65,11 +107,27 @@ export default function DashboardContent() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [proposalReports, setProposalReports] = useState<ProposalReports | null>(null);
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [proposalItems, setProposalItems] = useState<{ serviceId: number; quantity: number }[]>([]);
+  const [availableServices, setAvailableServices] = useState<{ id: number; title: string; price: number }[]>([]);
 
   const profileForm = useForm<ProfileFormData>({ resolver: zodResolver(profileSchema) });
   const serviceForm = useForm<ServiceFormData>({ resolver: zodResolver(serviceSchema) });
   const projectForm = useForm<ProjectFormData>({ resolver: zodResolver(projectSchema) });
   const testimonialForm = useForm<TestimonialFormData>({ resolver: zodResolver(testimonialSchema) });
+
+  const proposalSchema = z.object({
+    title: z.string().min(1, "Título é obrigatório"),
+    clientName: z.string().min(1, "Nome do cliente é obrigatório"),
+    clientEmail: z.string().email("Email inválido"),
+    notes: z.string().optional(),
+    discount: z.number().min(0),
+  });
+  type ProposalFormData = z.infer<typeof proposalSchema>;
+
+  const proposalForm = useForm<ProposalFormData>({ resolver: zodResolver(proposalSchema) });
 
   const fetchUser = useCallback(async () => {
     try {
@@ -122,13 +180,40 @@ export default function DashboardContent() {
     } catch {}
   }, []);
 
+  const fetchProposals = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/proposals`, { credentials: "include" });
+      if (res.ok) {
+        const json = await res.json();
+        setProposals(json.data);
+      }
+    } catch {}
+  }, []);
+
+  const fetchProposalReports = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/proposals/reports`, { credentials: "include" });
+      if (res.ok) setProposalReports(await res.json());
+    } catch {}
+  }, []);
+
+  const fetchAvailableServices = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/services?limit=100`, { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        setAvailableServices(json.data);
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     async function init() {
-      await Promise.all([fetchUser(), fetchServices(), fetchContacts(), fetchProjects(), fetchTestimonials()]);
+      await Promise.all([fetchUser(), fetchServices(), fetchContacts(), fetchProjects(), fetchTestimonials(), fetchProposals(), fetchProposalReports(), fetchAvailableServices()]);
       setLoading(false);
     }
     init();
-  }, [fetchUser, fetchServices, fetchContacts, fetchProjects, fetchTestimonials]);
+  }, [fetchUser, fetchServices, fetchContacts, fetchProjects, fetchTestimonials, fetchProposals, fetchProposalReports, fetchAvailableServices]);
 
   // Profile
   async function onProfileSubmit(data: ProfileFormData) {
@@ -219,6 +304,91 @@ export default function DashboardContent() {
     await fetchTestimonials();
   }
 
+  async function onProposalSubmit(data: ProposalFormData) {
+    setMsg("");
+    try {
+      const body: any = { ...data, items: proposalItems };
+      const res = await fetch(`${API_URL}/api/proposals`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setMsg(err.message || err.error || "Erro");
+        return;
+      }
+      setMsg("Proposta criada com sucesso");
+      proposalForm.reset({ title: "", clientName: "", clientEmail: "", notes: "", discount: 0 });
+      setProposalItems([]);
+      await fetchProposals();
+      await fetchProposalReports();
+    } catch { setMsg("Erro de conexão"); }
+  }
+
+  async function transitionProposal(id: number, status: string) {
+    setMsg("");
+    try {
+      const res = await fetch(`${API_URL}/api/proposals/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setMsg(err.message || "Erro");
+        return;
+      }
+      setMsg(`Proposta ${status === "sent" ? "enviada" : status === "accepted" ? "aceita" : "recusada"} com sucesso`);
+      await fetchProposals();
+      await fetchProposalReports();
+    } catch { setMsg("Erro de conexão"); }
+  }
+
+  async function deleteProposal(id: number) {
+    await fetch(`${API_URL}/api/proposals/${id}`, { method: "DELETE", credentials: "include" });
+    await fetchProposals();
+    await fetchProposalReports();
+  }
+
+  async function viewProposal(id: number) {
+    setMsg("");
+    try {
+      const res = await fetch(`${API_URL}/api/proposals/${id}`, { credentials: "include" });
+      if (res.ok) {
+        const json = await res.json();
+        setSelectedProposal(json.proposal);
+      }
+    } catch { setMsg("Erro de conexão"); }
+  }
+
+  function addProposalItem(serviceId: number) {
+    const svc = availableServices.find((s) => s.id === serviceId);
+    if (!svc) return;
+    setProposalItems([...proposalItems, { serviceId: svc.id, quantity: 1 }]);
+  }
+
+  function updateProposalItemQuantity(index: number, quantity: number) {
+    const updated = [...proposalItems];
+    updated[index].quantity = Math.max(1, quantity);
+    setProposalItems(updated);
+  }
+
+  function removeProposalItem(index: number) {
+    setProposalItems(proposalItems.filter((_, i) => i !== index));
+  }
+
+  function calcProposalTotal(): number {
+    const subtotal = proposalItems.reduce((sum, item) => {
+      const svc = availableServices.find((s) => s.id === item.serviceId);
+      return sum + (svc ? svc.price * item.quantity : 0);
+    }, 0);
+    const discount = proposalForm.watch("discount") || 0;
+    return Math.max(0, subtotal - discount);
+  }
+
   if (loading) return <div className="py-12 max-w-4xl mx-auto text-center text-gray-500">Carregando...</div>;
 
   const tabs: { key: Tab; label: string }[] = [
@@ -227,6 +397,7 @@ export default function DashboardContent() {
     { key: "contacts", label: "Contatos" },
     { key: "projects", label: "Projetos" },
     { key: "testimonials", label: "Depoimentos" },
+    { key: "proposals", label: "Orçamentos" },
   ];
 
   return (
@@ -450,6 +621,224 @@ export default function DashboardContent() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Orçamentos */}
+      {tab === "proposals" && (
+        selectedProposal ? (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{selectedProposal.title}</CardTitle>
+                  <CardDescription>
+                    Cliente: {selectedProposal.clientName} ({selectedProposal.clientEmail})
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setSelectedProposal(null)}>Voltar</Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="font-semibold text-sm uppercase">{selectedProposal.status}</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Subtotal</p>
+                  <p className="font-semibold text-sm">R$ {selectedProposal.subtotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="font-semibold text-sm text-green-700">R$ {selectedProposal.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Itens da Proposta</h3>
+                <div className="space-y-2">
+                  {selectedProposal.items?.map((item) => (
+                    <div key={item.id} className="flex justify-between items-center p-2 border rounded-lg">
+                      <div>
+                        <p className="font-medium text-sm">{item.service.title}</p>
+                        <p className="text-xs text-muted-foreground">R$ {item.unitPrice.toFixed(2)} x {item.quantity} = R$ {item.subtotal.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {selectedProposal.history && selectedProposal.history.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-sm mb-2">Histórico</h3>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {selectedProposal.history.map((h) => (
+                      <div key={h.id} className="text-xs text-muted-foreground flex justify-between p-1 border-b">
+                        <span><strong>{h.user.username}</strong>: {h.field} — {h.oldValue || "—"} → {h.newValue}</span>
+                        <span>{new Date(h.createdAt).toLocaleString("pt-BR")}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedProposal.notes && (
+                <div>
+                  <h3 className="font-semibold text-sm mb-1">Observações</h3>
+                  <p className="text-sm text-muted-foreground">{selectedProposal.notes}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Gerenciar Orçamentos</CardTitle>
+              <CardDescription>Crie propostas comerciais com múltiplos serviços.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Reports */}
+              {proposalReports && (
+                <div className="grid grid-cols-4 gap-3 mb-4">
+                  <div className="p-3 bg-blue-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-blue-700">{proposalReports.totalProposals}</p>
+                    <p className="text-xs text-blue-600">Total</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-700">{proposalReports.byStatus.accepted}</p>
+                    <p className="text-xs text-green-600">Aceitas</p>
+                  </div>
+                  <div className="p-3 bg-yellow-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-yellow-700">R$ {proposalReports.totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}</p>
+                    <p className="text-xs text-yellow-600">Receita</p>
+                  </div>
+                  <div className="p-3 bg-purple-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-purple-700">{(proposalReports.conversionRate * 100).toFixed(0)}%</p>
+                    <p className="text-xs text-purple-600">Conversão</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Create form */}
+              <form onSubmit={proposalForm.handleSubmit(onProposalSubmit)} className="space-y-4 max-w-lg border p-4 rounded-lg">
+                <h3 className="font-semibold text-sm">Nova Proposta</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="prop-title">Título</Label>
+                  <input id="prop-title" className={inputClass} placeholder="Ex: Proposta Site Institucional" {...proposalForm.register("title")} />
+                  {proposalForm.formState.errors.title && <p className="text-sm text-destructive">{proposalForm.formState.errors.title.message}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="prop-client">Cliente</Label>
+                    <input id="prop-client" className={inputClass} placeholder="Nome" {...proposalForm.register("clientName")} />
+                    {proposalForm.formState.errors.clientName && <p className="text-sm text-destructive">{proposalForm.formState.errors.clientName.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="prop-email">Email</Label>
+                    <input id="prop-email" className={inputClass} placeholder="cliente@email.com" {...proposalForm.register("clientEmail")} />
+                    {proposalForm.formState.errors.clientEmail && <p className="text-sm text-destructive">{proposalForm.formState.errors.clientEmail.message}</p>}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="prop-discount">Desconto (R$)</Label>
+                  <input id="prop-discount" type="number" min="0" step="0.01" className={inputClass} {...proposalForm.register("discount", { valueAsNumber: true })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="prop-notes">Observações</Label>
+                  <textarea id="prop-notes" className={inputClass} rows={2} {...proposalForm.register("notes")} />
+                </div>
+
+                <div>
+                  <Label className="mb-2 block">Serviços</Label>
+                  <div className="flex gap-2 mb-2">
+                    <select
+                      className="flex h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          addProposalItem(Number(e.target.value));
+                          e.target.value = "";
+                        }
+                      }}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Adicionar serviço...</option>
+                      {availableServices.map((s) => (
+                        <option key={s.id} value={s.id}>{s.title} — R$ {s.price.toFixed(2)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {proposalItems.length > 0 && (
+                    <div className="space-y-1 mb-2">
+                      {proposalItems.map((item, idx) => {
+                        const svc = availableServices.find((s) => s.id === item.serviceId);
+                        return (
+                          <div key={idx} className="flex items-center gap-2 p-2 border rounded-lg">
+                            <span className="text-sm flex-1">{svc?.title || `Serviço #${item.serviceId}`}</span>
+                            <input
+                              type="number"
+                              min={1}
+                              className="h-7 w-16 rounded border border-input bg-transparent px-1.5 text-sm"
+                              value={item.quantity}
+                              onChange={(e) => updateProposalItemQuantity(idx, Number(e.target.value))}
+                            />
+                            <span className="text-xs text-muted-foreground w-20 text-right">R$ {((svc?.price || 0) * item.quantity).toFixed(2)}</span>
+                            <Button size="xs" variant="destructive" type="button" onClick={() => removeProposalItem(idx)}>X</Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {proposalItems.length > 0 && (
+                    <p className="text-sm font-semibold">Total: R$ {calcProposalTotal().toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                  )}
+                </div>
+
+                <Button type="submit" disabled={proposalForm.formState.isSubmitting || proposalItems.length === 0}>
+                  Criar Proposta
+                </Button>
+              </form>
+
+              {/* Proposals list */}
+              {proposals.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-gray-600">Propostas ({proposals.length})</h3>
+                  {proposals.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">{p.title}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            p.status === "draft" ? "bg-gray-200 text-gray-700" :
+                            p.status === "sent" ? "bg-blue-200 text-blue-700" :
+                            p.status === "accepted" ? "bg-green-200 text-green-700" :
+                            p.status === "rejected" ? "bg-red-200 text-red-700" :
+                            "bg-yellow-200 text-yellow-700"
+                          }`}>{p.status}</span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {p.clientName} — R$ {p.total.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="xs" variant="outline" onClick={() => viewProposal(p.id)}>Ver</Button>
+                        {p.status === "draft" && (
+                          <Button size="xs" variant="default" onClick={() => transitionProposal(p.id, "sent")}>Enviar</Button>
+                        )}
+                        {p.status === "sent" && (
+                          <>
+                            <Button size="xs" variant="default" onClick={() => transitionProposal(p.id, "accepted")}>Aceitar</Button>
+                            <Button size="xs" variant="destructive" onClick={() => transitionProposal(p.id, "rejected")}>Recusar</Button>
+                          </>
+                        )}
+                        <Button size="xs" variant="destructive" onClick={() => deleteProposal(p.id)}>Excluir</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
       )}
     </div>
   );
