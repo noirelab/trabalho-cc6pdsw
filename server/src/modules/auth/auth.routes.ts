@@ -2,19 +2,22 @@ import { FastifyInstance } from "fastify";
 import { loginSchema } from "./auth.schema";
 import * as authService from "./auth.service";
 import { authMiddleware } from "../../plugins/auth";
+import { loginRateLimit, clearRateLimit } from "../../plugins/rate-limit";
 
 export async function authRoutes(app: FastifyInstance) {
-  app.post("/api/auth/login", async (request, reply) => {
-    const parsed = loginSchema.safeParse(request.body);
+  app.post(
+    "/api/auth/login",
+    { preHandler: loginRateLimit },
+    async (request, reply) => {
+      const parsed = loginSchema.safeParse(request.body);
 
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: "Dados inválidos",
-        details: parsed.error.flatten().fieldErrors,
-      });
-    }
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Dados inválidos",
+          details: parsed.error.flatten().fieldErrors,
+        });
+      }
 
-    try {
       const result = await authService.login(
         parsed.data.username,
         parsed.data.password
@@ -27,11 +30,11 @@ export async function authRoutes(app: FastifyInstance) {
         sameSite: "lax",
       });
 
+      clearRateLimit(request.ip);
+
       return reply.send({ user: result.user });
-    } catch (err: any) {
-      return reply.status(401).send({ error: err.message });
     }
-  });
+  );
 
   app.get(
     "/api/auth/me",
