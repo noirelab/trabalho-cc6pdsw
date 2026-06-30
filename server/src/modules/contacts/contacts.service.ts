@@ -22,13 +22,24 @@ export async function listContactsPaginated(query: Record<string, unknown>): Pro
 }
 
 export async function createContact(data: CreateContactInput) {
-  return prisma.contact.create({ data });
+  return prisma.contact.create({
+    data: {
+      ...data,
+      email: data.email.trim().toLowerCase(),
+    },
+  });
 }
 
 export async function updateContact(id: number, data: UpdateContactInput) {
   const contact = await prisma.contact.findUnique({ where: { id } });
   if (!contact) throw new NotFoundError("Contato não encontrado");
-  return prisma.contact.update({ where: { id }, data });
+
+  const updateData: any = { ...data };
+  if (data.email) {
+    updateData.email = data.email.trim().toLowerCase();
+  }
+
+  return prisma.contact.update({ where: { id }, data: updateData });
 }
 
 export async function deleteContact(id: number) {
