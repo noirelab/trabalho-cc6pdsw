@@ -2,11 +2,30 @@ import prisma from "../../lib/prisma";
 import bcrypt from "bcryptjs";
 import { CreateUserInput, UpdateUserInput } from "./users.schema";
 import { NotFoundError, ValidationError } from "../../lib/errors";
+import { parsePagination, buildSearchFilter, PaginatedResult } from "../../lib/pagination";
 
 export async function listUsers() {
   return prisma.user.findMany({
     select: { id: true, username: true, name: true, createdAt: true },
   });
+}
+
+export async function listUsersPaginated(query: Record<string, unknown>): Promise<PaginatedResult<unknown>> {
+  const { page, limit, sort, order, search } = parsePagination(query, "users");
+  const where = buildSearchFilter(search, ["username", "name"]);
+
+  const [data, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      select: { id: true, username: true, name: true, role: true, createdAt: true },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { [sort]: order },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 export async function createUser(data: CreateUserInput) {

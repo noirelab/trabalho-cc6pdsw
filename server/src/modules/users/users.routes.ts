@@ -8,9 +8,9 @@ export async function usersRoutes(app: FastifyInstance) {
   app.get(
     "/api/users",
     { preHandler: [authMiddleware, requireAdmin] },
-    async (_request, reply) => {
-      const users = await usersService.listUsers();
-      return reply.send({ users });
+    async (request, reply) => {
+      const result = await usersService.listUsersPaginated(request.query as Record<string, unknown>);
+      return reply.send(result);
     }
   );
 

@@ -21,9 +21,9 @@ export async function contactsRoutes(app: FastifyInstance) {
   app.get(
     "/api/contacts",
     { preHandler: [authMiddleware, requireAdmin] },
-    async (_request, reply) => {
-      const contacts = await contactsService.listContacts();
-      return reply.send({ contacts });
+    async (request, reply) => {
+      const result = await contactsService.listContactsPaginated(request.query as Record<string, unknown>);
+      return reply.send(result);
     }
   );
 

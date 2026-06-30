@@ -1,11 +1,24 @@
 import prisma from "../../lib/prisma";
 import { CreateContactInput, UpdateContactInput } from "./contacts.schema";
 import { NotFoundError } from "../../lib/errors";
+import { parsePagination, buildSearchFilter, PaginatedResult } from "../../lib/pagination";
 
 export async function listContacts() {
   return prisma.contact.findMany({
     orderBy: { createdAt: "desc" },
   });
+}
+
+export async function listContactsPaginated(query: Record<string, unknown>): Promise<PaginatedResult<unknown>> {
+  const { page, limit, sort, order, search } = parsePagination(query, "contacts");
+  const where = buildSearchFilter(search, ["name", "email", "message"]);
+
+  const [data, total] = await Promise.all([
+    prisma.contact.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { [sort]: order } }),
+    prisma.contact.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 export async function createContact(data: CreateContactInput) {

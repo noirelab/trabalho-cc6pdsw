@@ -4,9 +4,9 @@ import * as projectsService from "./projects.service";
 import { authMiddleware, requireAdmin } from "../../plugins/auth";
 
 export async function projectsRoutes(app: FastifyInstance) {
-  app.get("/api/projects", async (_request, reply) => {
-    const projects = await projectsService.listProjects();
-    return reply.send({ projects });
+  app.get("/api/projects", async (request, reply) => {
+    const result = await projectsService.listProjectsPaginated(request.query as Record<string, unknown>);
+    return reply.send(result);
   });
 
   app.post(

@@ -7,9 +7,9 @@ import * as testimonialsService from "./testimonials.service";
 import { authMiddleware, requireAdmin } from "../../plugins/auth";
 
 export async function testimonialsRoutes(app: FastifyInstance) {
-  app.get("/api/testimonials", async (_request, reply) => {
-    const testimonials = await testimonialsService.listTestimonials();
-    return reply.send({ testimonials });
+  app.get("/api/testimonials", async (request, reply) => {
+    const result = await testimonialsService.listTestimonialsPaginated(request.query as Record<string, unknown>);
+    return reply.send(result);
   });
 
   app.post(

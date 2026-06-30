@@ -4,11 +4,24 @@ import {
   UpdateTestimonialInput,
 } from "./testimonials.schema";
 import { NotFoundError } from "../../lib/errors";
+import { parsePagination, buildSearchFilter, PaginatedResult } from "../../lib/pagination";
 
 export async function listTestimonials() {
   return prisma.testimonial.findMany({
     orderBy: { createdAt: "desc" },
   });
+}
+
+export async function listTestimonialsPaginated(query: Record<string, unknown>): Promise<PaginatedResult<unknown>> {
+  const { page, limit, sort, order, search } = parsePagination(query, "testimonials");
+  const where = buildSearchFilter(search, ["name", "role", "text"]);
+
+  const [data, total] = await Promise.all([
+    prisma.testimonial.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { [sort]: order } }),
+    prisma.testimonial.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 export async function createTestimonial(data: CreateTestimonialInput) {

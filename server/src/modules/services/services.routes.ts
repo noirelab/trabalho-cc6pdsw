@@ -4,9 +4,9 @@ import * as servicesService from "./services.service";
 import { authMiddleware, requireAdmin } from "../../plugins/auth";
 
 export async function servicesRoutes(app: FastifyInstance) {
-  app.get("/api/services", async (_request, reply) => {
-    const services = await servicesService.listServices();
-    return reply.send({ services });
+  app.get("/api/services", async (request, reply) => {
+    const result = await servicesService.listServicesPaginated(request.query as Record<string, unknown>);
+    return reply.send(result);
   });
 
   app.get("/api/services/:id", async (request, reply) => {
