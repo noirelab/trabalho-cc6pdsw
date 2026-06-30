@@ -6,6 +6,7 @@ interface Project {
   id: number;
   title: string;
   description: string;
+  imageUrl: string;
   createdAt: string;
 }
 
@@ -34,9 +35,13 @@ export default async function Projects() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {projects.map((project) => (
           <Card key={project.id} className="flex flex-col">
-            <div className="h-40 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center rounded-t-lg">
-              <span className="text-4xl text-gray-400">&#x1F4E6;</span>
-            </div>
+            {project.imageUrl ? (
+              <img src={project.imageUrl} alt={project.title} className="h-40 object-cover rounded-t-lg" />
+            ) : (
+              <div className="h-40 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center rounded-t-lg">
+                <span className="text-4xl text-gray-400">&#x1F4E6;</span>
+              </div>
+            )}
             <CardHeader>
               <CardTitle>{project.title}</CardTitle>
               <CardDescription>{project.description}</CardDescription>
