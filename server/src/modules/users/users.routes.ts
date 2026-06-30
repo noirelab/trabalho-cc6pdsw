@@ -1,12 +1,13 @@
 import { FastifyInstance } from "fastify";
 import { createUserSchema, updateUserSchema } from "./users.schema";
 import * as usersService from "./users.service";
-import { authMiddleware } from "../../plugins/auth";
+import { authMiddleware, requireAdmin } from "../../plugins/auth";
+import { ForbiddenError } from "../../lib/errors";
 
 export async function usersRoutes(app: FastifyInstance) {
   app.get(
     "/api/users",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (_request, reply) => {
       const users = await usersService.listUsers();
       return reply.send({ users });
@@ -15,7 +16,7 @@ export async function usersRoutes(app: FastifyInstance) {
 
   app.post(
     "/api/users",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const parsed = createUserSchema.safeParse(request.body);
 
@@ -49,8 +50,13 @@ export async function usersRoutes(app: FastifyInstance) {
         });
       }
 
+      const userId = Number(id);
+      if (request.user!.userId !== userId && request.user!.role !== "admin") {
+        throw new ForbiddenError("Você só pode editar seu próprio perfil");
+      }
+
       try {
-        const user = await usersService.updateUser(Number(id), parsed.data);
+        const user = await usersService.updateUser(userId, parsed.data);
         return reply.send({ user });
       } catch (err: any) {
         return reply.status(404).send({ error: err.message });
@@ -60,7 +66,7 @@ export async function usersRoutes(app: FastifyInstance) {
 
   app.delete(
     "/api/users/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
 

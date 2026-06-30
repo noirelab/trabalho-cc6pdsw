@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { createContactSchema, updateContactSchema } from "./contacts.schema";
 import * as contactsService from "./contacts.service";
-import { authMiddleware } from "../../plugins/auth";
+import { authMiddleware, requireAdmin } from "../../plugins/auth";
 
 export async function contactsRoutes(app: FastifyInstance) {
   app.post("/api/contacts", async (request, reply) => {
@@ -20,7 +20,7 @@ export async function contactsRoutes(app: FastifyInstance) {
 
   app.get(
     "/api/contacts",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (_request, reply) => {
       const contacts = await contactsService.listContacts();
       return reply.send({ contacts });
@@ -29,7 +29,7 @@ export async function contactsRoutes(app: FastifyInstance) {
 
   app.put(
     "/api/contacts/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const parsed = updateContactSchema.safeParse(request.body);
@@ -55,7 +55,7 @@ export async function contactsRoutes(app: FastifyInstance) {
 
   app.delete(
     "/api/contacts/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
 

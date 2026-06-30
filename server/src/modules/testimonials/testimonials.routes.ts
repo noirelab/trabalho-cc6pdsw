@@ -4,7 +4,7 @@ import {
   updateTestimonialSchema,
 } from "./testimonials.schema";
 import * as testimonialsService from "./testimonials.service";
-import { authMiddleware } from "../../plugins/auth";
+import { authMiddleware, requireAdmin } from "../../plugins/auth";
 
 export async function testimonialsRoutes(app: FastifyInstance) {
   app.get("/api/testimonials", async (_request, reply) => {
@@ -14,7 +14,7 @@ export async function testimonialsRoutes(app: FastifyInstance) {
 
   app.post(
     "/api/testimonials",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const parsed = createTestimonialSchema.safeParse(request.body);
 
@@ -34,7 +34,7 @@ export async function testimonialsRoutes(app: FastifyInstance) {
 
   app.put(
     "/api/testimonials/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const parsed = updateTestimonialSchema.safeParse(request.body);
@@ -60,7 +60,7 @@ export async function testimonialsRoutes(app: FastifyInstance) {
 
   app.delete(
     "/api/testimonials/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
 

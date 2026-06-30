@@ -15,7 +15,7 @@ export async function login(username: string, password: string) {
     throw new Error("Credenciais inválidas");
   }
 
-  const payload: JwtPayload = { userId: user.id, username: user.username };
+  const payload: JwtPayload = { userId: user.id, username: user.username, role: user.role };
   const token = signToken(payload);
 
   return {

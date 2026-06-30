@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { createProjectSchema, updateProjectSchema } from "./projects.schema";
 import * as projectsService from "./projects.service";
-import { authMiddleware } from "../../plugins/auth";
+import { authMiddleware, requireAdmin } from "../../plugins/auth";
 
 export async function projectsRoutes(app: FastifyInstance) {
   app.get("/api/projects", async (_request, reply) => {
@@ -11,7 +11,7 @@ export async function projectsRoutes(app: FastifyInstance) {
 
   app.post(
     "/api/projects",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const parsed = createProjectSchema.safeParse(request.body);
 
@@ -29,7 +29,7 @@ export async function projectsRoutes(app: FastifyInstance) {
 
   app.put(
     "/api/projects/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const parsed = updateProjectSchema.safeParse(request.body);
@@ -55,7 +55,7 @@ export async function projectsRoutes(app: FastifyInstance) {
 
   app.delete(
     "/api/projects/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
 

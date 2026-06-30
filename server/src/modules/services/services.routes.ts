@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { createServiceSchema, updateServiceSchema } from "./services.schema";
 import * as servicesService from "./services.service";
-import { authMiddleware } from "../../plugins/auth";
+import { authMiddleware, requireAdmin } from "../../plugins/auth";
 
 export async function servicesRoutes(app: FastifyInstance) {
   app.get("/api/services", async (_request, reply) => {
@@ -22,7 +22,7 @@ export async function servicesRoutes(app: FastifyInstance) {
 
   app.post(
     "/api/services",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const parsed = createServiceSchema.safeParse(request.body);
 
@@ -40,7 +40,7 @@ export async function servicesRoutes(app: FastifyInstance) {
 
   app.put(
     "/api/services/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const parsed = updateServiceSchema.safeParse(request.body);
@@ -66,7 +66,7 @@ export async function servicesRoutes(app: FastifyInstance) {
 
   app.delete(
     "/api/services/:id",
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
 
