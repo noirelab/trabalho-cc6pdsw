@@ -24,16 +24,19 @@ async function main() {
       title: "Desenvolvimento Web",
       description:
         "Criação de portais corporativos e web apps escaláveis com as tecnologias mais modernas do mercado.",
+      price: 15000,
     },
     {
       title: "Design UI/UX",
       description:
         "Interfaces minimalistas focadas em acessibilidade, usabilidade e conversão de usuários.",
+      price: 8000,
     },
     {
       title: "Auditoria de Código",
       description:
         "Revisão e melhoria de bases de código legadas, identificando bugs, vulnerabilidades e débitos técnicos.",
+      price: 5000,
     },
   ];
 
