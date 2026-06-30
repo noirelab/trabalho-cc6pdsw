@@ -16,7 +16,7 @@ async function getTestimonials(): Promise<Testimonial[]> {
     const res = await fetch(`${API_URL}/api/testimonials`, { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
-      return data.testimonials;
+      return data.data;
     }
   } catch {}
   return [];

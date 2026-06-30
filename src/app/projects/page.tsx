@@ -16,7 +16,7 @@ export default async function Projects() {
     const res = await fetch(`${API_URL}/api/projects`, { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
-      projects = data.projects;
+      projects = data.data;
     }
   } catch {}
 

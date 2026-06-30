@@ -85,28 +85,40 @@ export default function DashboardContent() {
   const fetchServices = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/services`, { cache: "no-store" });
-      if (res.ok) setServices((await res.json()).services);
+      if (res.ok) {
+        const json = await res.json();
+        setServices(json.data);
+      }
     } catch {}
   }, []);
 
   const fetchContacts = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/contacts`, { credentials: "include" });
-      if (res.ok) setContacts((await res.json()).contacts);
+      if (res.ok) {
+        const json = await res.json();
+        setContacts(json.data);
+      }
     } catch {}
   }, []);
 
   const fetchProjects = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/projects`, { cache: "no-store" });
-      if (res.ok) setProjects((await res.json()).projects);
+      if (res.ok) {
+        const json = await res.json();
+        setProjects(json.data);
+      }
     } catch {}
   }, []);
 
   const fetchTestimonials = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/testimonials`, { cache: "no-store" });
-      if (res.ok) setTestimonials((await res.json()).testimonials);
+      if (res.ok) {
+        const json = await res.json();
+        setTestimonials(json.data);
+      }
     } catch {}
   }, []);
 

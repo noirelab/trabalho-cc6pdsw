@@ -19,7 +19,7 @@ export default async function Services() {
     });
     if (res.ok) {
       const data = await res.json();
-      services = data.services;
+      services = data.data;
     }
   } catch {
     // Fallback para array vazio se API estiver offline
