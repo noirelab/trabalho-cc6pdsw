@@ -33,3 +33,12 @@ export async function loginRateLimit(
 export function clearRateLimit(ip: string) {
   attempts.delete(ip);
 }
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of attempts) {
+    if (now - entry.firstAttempt > WINDOW_MS) {
+      attempts.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
