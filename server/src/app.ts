@@ -8,6 +8,7 @@ import { servicesRoutes } from "./modules/services/services.routes";
 import { contactsRoutes } from "./modules/contacts/contacts.routes";
 import { projectsRoutes } from "./modules/projects/projects.routes";
 import { testimonialsRoutes } from "./modules/testimonials/testimonials.routes";
+import { proposalsRoutes } from "./modules/proposals/proposal.routes";
 
 export function buildApp() {
   const app = Fastify({ logger: true });
@@ -24,6 +25,7 @@ export function buildApp() {
     await contactsRoutes(instance);
     await projectsRoutes(instance);
     await testimonialsRoutes(instance);
+    await proposalsRoutes(instance);
   });
 
   app.get("/api/health", async () => {
