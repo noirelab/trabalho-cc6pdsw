@@ -23,6 +23,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 const serviceSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   description: z.string().min(1, "Descrição é obrigatória"),
+  price: z.number().min(0, "Preço deve ser >= 0"),
 });
 type ServiceFormData = z.infer<typeof serviceSchema>;
 
@@ -46,7 +47,7 @@ const testimonialSchema = z.object({
 type TestimonialFormData = z.infer<typeof testimonialSchema>;
 
 interface User { id: number; username: string; name: string; }
-interface Service { id: number; title: string; description: string; createdAt: string; }
+interface Service { id: number; title: string; description: string; price: number; createdAt: string; }
 interface Contact { id: number; name: string; email: string; message: string; createdAt: string; }
 interface Project { id: number; title: string; description: string; createdAt: string; }
 interface Testimonial { id: number; name: string; role: string; text: string; createdAt: string; }
@@ -244,7 +245,7 @@ export default function DashboardContent() {
       });
       if (!res.ok) { setMsg((await res.json()).error || "Erro"); return; }
       setEditingService(null);
-      serviceForm.reset({ title: "", description: "" });
+      serviceForm.reset({ title: "", description: "", price: 0 });
       await fetchServices();
     } catch { setMsg("Erro de conexão"); }
   }
@@ -472,22 +473,28 @@ export default function DashboardContent() {
                 <input id="svc-desc" className={inputClass} placeholder="Descrição" {...serviceForm.register("description")} />
                 {serviceForm.formState.errors.description && <p className="text-sm text-destructive">{serviceForm.formState.errors.description.message}</p>}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="svc-price">Preço (R$)</Label>
+                <input id="svc-price" type="number" min="0" step="0.01" className={inputClass} placeholder="0,00" {...serviceForm.register("price", { valueAsNumber: true })} />
+                {serviceForm.formState.errors.price && <p className="text-sm text-destructive">{serviceForm.formState.errors.price.message}</p>}
+              </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={serviceForm.formState.isSubmitting}>{editingService ? "Atualizar" : "Criar Serviço"}</Button>
-                {editingService && <Button type="button" variant="outline" onClick={() => { setEditingService(null); serviceForm.reset({ title: "", description: "" }); }}>Cancelar</Button>}
+                {editingService && <Button type="button" variant="outline" onClick={() => { setEditingService(null); serviceForm.reset({ title: "", description: "", price: 0 }); }}>Cancelar</Button>}
               </div>
             </form>
             {services.length > 0 && (
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm text-gray-600">Serviços cadastrados ({services.length})</h3>
-                {services.map((s) => (
+                 {services.map((s) => (
                   <div key={s.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                       <p className="font-medium text-sm">{s.title}</p>
                       <p className="text-xs text-gray-500 truncate max-w-md">{s.description}</p>
+                      <p className="text-xs text-green-700">R$ {s.price.toFixed(2)}</p>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="xs" variant="outline" onClick={() => { setEditingService(s); serviceForm.reset({ title: s.title, description: s.description }); }}>Editar</Button>
+                      <Button size="xs" variant="outline" onClick={() => { setEditingService(s); serviceForm.reset({ title: s.title, description: s.description, price: s.price }); }}>Editar</Button>
                       <Button size="xs" variant="destructive" onClick={() => deleteService(s.id)}>Excluir</Button>
                     </div>
                   </div>
