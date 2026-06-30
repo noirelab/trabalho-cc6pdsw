@@ -1,5 +1,6 @@
 import prisma from "../../lib/prisma";
 import { CreateContactInput, UpdateContactInput } from "./contacts.schema";
+import { NotFoundError } from "../../lib/errors";
 
 export async function listContacts() {
   return prisma.contact.findMany({
@@ -13,12 +14,12 @@ export async function createContact(data: CreateContactInput) {
 
 export async function updateContact(id: number, data: UpdateContactInput) {
   const contact = await prisma.contact.findUnique({ where: { id } });
-  if (!contact) throw new Error("Contato não encontrado");
+  if (!contact) throw new NotFoundError("Contato não encontrado");
   return prisma.contact.update({ where: { id }, data });
 }
 
 export async function deleteContact(id: number) {
   const contact = await prisma.contact.findUnique({ where: { id } });
-  if (!contact) throw new Error("Contato não encontrado");
+  if (!contact) throw new NotFoundError("Contato não encontrado");
   await prisma.contact.delete({ where: { id } });
 }

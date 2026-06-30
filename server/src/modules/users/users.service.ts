@@ -1,6 +1,7 @@
 import prisma from "../../lib/prisma";
 import bcrypt from "bcryptjs";
 import { CreateUserInput, UpdateUserInput } from "./users.schema";
+import { NotFoundError, ValidationError } from "../../lib/errors";
 
 export async function listUsers() {
   return prisma.user.findMany({
@@ -14,7 +15,7 @@ export async function createUser(data: CreateUserInput) {
   });
 
   if (existing) {
-    throw new Error("Usuário já existe");
+    throw new ValidationError("Usuário já existe");
   }
 
   const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -27,7 +28,7 @@ export async function createUser(data: CreateUserInput) {
 
 export async function updateUser(id: number, data: UpdateUserInput) {
   const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) throw new Error("Usuário não encontrado");
+  if (!user) throw new NotFoundError("Usuário não encontrado");
 
   const updateData: any = { ...data };
 
@@ -44,7 +45,7 @@ export async function updateUser(id: number, data: UpdateUserInput) {
 
 export async function deleteUser(id: number) {
   const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) throw new Error("Usuário não encontrado");
+  if (!user) throw new NotFoundError("Usuário não encontrado");
 
   await prisma.user.delete({ where: { id } });
 }

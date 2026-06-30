@@ -40,12 +40,8 @@ export async function authRoutes(app: FastifyInstance) {
     "/api/auth/me",
     { preHandler: authMiddleware },
     async (request, reply) => {
-      try {
-        const user = await authService.getUser(request.user!.userId);
-        return reply.send({ user });
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      const user = await authService.getUser(request.user!.userId);
+      return reply.send({ user });
     }
   );
 

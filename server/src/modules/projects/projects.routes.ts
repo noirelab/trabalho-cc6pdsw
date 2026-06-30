@@ -41,15 +41,11 @@ export async function projectsRoutes(app: FastifyInstance) {
         });
       }
 
-      try {
-        const project = await projectsService.updateProject(
-          Number(id),
-          parsed.data
-        );
-        return reply.send({ project });
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      const project = await projectsService.updateProject(
+        Number(id),
+        parsed.data
+      );
+      return reply.send({ project });
     }
   );
 
@@ -59,12 +55,8 @@ export async function projectsRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
 
-      try {
-        await projectsService.deleteProject(Number(id));
-        return reply.status(204).send();
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      await projectsService.deleteProject(Number(id));
+      return reply.status(204).send();
     }
   );
 }

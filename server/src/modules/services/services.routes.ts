@@ -12,12 +12,8 @@ export async function servicesRoutes(app: FastifyInstance) {
   app.get("/api/services/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    try {
-      const service = await servicesService.getServiceById(Number(id));
-      return reply.send({ service });
-    } catch (err: any) {
-      return reply.status(404).send({ error: err.message });
-    }
+    const service = await servicesService.getServiceById(Number(id));
+    return reply.send({ service });
   });
 
   app.post(
@@ -52,15 +48,11 @@ export async function servicesRoutes(app: FastifyInstance) {
         });
       }
 
-      try {
-        const service = await servicesService.updateService(
-          Number(id),
-          parsed.data
-        );
-        return reply.send({ service });
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      const service = await servicesService.updateService(
+        Number(id),
+        parsed.data
+      );
+      return reply.send({ service });
     }
   );
 
@@ -70,12 +62,8 @@ export async function servicesRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
 
-      try {
-        await servicesService.deleteService(Number(id));
-        return reply.status(204).send();
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      await servicesService.deleteService(Number(id));
+      return reply.status(204).send();
     }
   );
 }

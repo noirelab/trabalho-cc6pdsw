@@ -1,18 +1,19 @@
 import prisma from "../../lib/prisma";
 import bcrypt from "bcryptjs";
 import { signToken, JwtPayload } from "../../plugins/auth";
+import { UnauthorizedError, NotFoundError } from "../../lib/errors";
 
 export async function login(username: string, password: string) {
   const user = await prisma.user.findUnique({ where: { username } });
 
   if (!user) {
-    throw new Error("Credenciais inválidas");
+    throw new UnauthorizedError("Credenciais inválidas");
   }
 
   const valid = await bcrypt.compare(password, user.password);
 
   if (!valid) {
-    throw new Error("Credenciais inválidas");
+    throw new UnauthorizedError("Credenciais inválidas");
   }
 
   const payload: JwtPayload = { userId: user.id, username: user.username, role: user.role };
@@ -35,7 +36,7 @@ export async function getUser(userId: number) {
   });
 
   if (!user) {
-    throw new Error("Usuário não encontrado");
+    throw new NotFoundError("Usuário não encontrado");
   }
 
   return user;

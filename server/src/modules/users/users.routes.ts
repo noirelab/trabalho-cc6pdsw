@@ -27,12 +27,8 @@ export async function usersRoutes(app: FastifyInstance) {
         });
       }
 
-      try {
-        const user = await usersService.createUser(parsed.data);
-        return reply.status(201).send({ user });
-      } catch (err: any) {
-        return reply.status(409).send({ error: err.message });
-      }
+      const user = await usersService.createUser(parsed.data);
+      return reply.status(201).send({ user });
     }
   );
 
@@ -55,12 +51,8 @@ export async function usersRoutes(app: FastifyInstance) {
         throw new ForbiddenError("Você só pode editar seu próprio perfil");
       }
 
-      try {
-        const user = await usersService.updateUser(userId, parsed.data);
-        return reply.send({ user });
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      const user = await usersService.updateUser(userId, parsed.data);
+      return reply.send({ user });
     }
   );
 
@@ -70,12 +62,8 @@ export async function usersRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
 
-      try {
-        await usersService.deleteUser(Number(id));
-        return reply.status(204).send();
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      await usersService.deleteUser(Number(id));
+      return reply.status(204).send();
     }
   );
 }

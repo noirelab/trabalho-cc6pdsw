@@ -41,15 +41,11 @@ export async function contactsRoutes(app: FastifyInstance) {
         });
       }
 
-      try {
-        const contact = await contactsService.updateContact(
-          Number(id),
-          parsed.data
-        );
-        return reply.send({ contact });
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      const contact = await contactsService.updateContact(
+        Number(id),
+        parsed.data
+      );
+      return reply.send({ contact });
     }
   );
 
@@ -59,12 +55,8 @@ export async function contactsRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
 
-      try {
-        await contactsService.deleteContact(Number(id));
-        return reply.status(204).send();
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      await contactsService.deleteContact(Number(id));
+      return reply.status(204).send();
     }
   );
 }

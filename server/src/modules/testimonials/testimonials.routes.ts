@@ -46,15 +46,11 @@ export async function testimonialsRoutes(app: FastifyInstance) {
         });
       }
 
-      try {
-        const testimonial = await testimonialsService.updateTestimonial(
-          Number(id),
-          parsed.data
-        );
-        return reply.send({ testimonial });
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      const testimonial = await testimonialsService.updateTestimonial(
+        Number(id),
+        parsed.data
+      );
+      return reply.send({ testimonial });
     }
   );
 
@@ -64,12 +60,8 @@ export async function testimonialsRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
 
-      try {
-        await testimonialsService.deleteTestimonial(Number(id));
-        return reply.status(204).send();
-      } catch (err: any) {
-        return reply.status(404).send({ error: err.message });
-      }
+      await testimonialsService.deleteTestimonial(Number(id));
+      return reply.status(204).send();
     }
   );
 }

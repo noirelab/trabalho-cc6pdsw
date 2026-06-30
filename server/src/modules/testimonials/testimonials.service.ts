@@ -3,6 +3,7 @@ import {
   CreateTestimonialInput,
   UpdateTestimonialInput,
 } from "./testimonials.schema";
+import { NotFoundError } from "../../lib/errors";
 
 export async function listTestimonials() {
   return prisma.testimonial.findMany({
@@ -19,12 +20,12 @@ export async function updateTestimonial(
   data: UpdateTestimonialInput
 ) {
   const testimonial = await prisma.testimonial.findUnique({ where: { id } });
-  if (!testimonial) throw new Error("Depoimento não encontrado");
+  if (!testimonial) throw new NotFoundError("Depoimento não encontrado");
   return prisma.testimonial.update({ where: { id }, data });
 }
 
 export async function deleteTestimonial(id: number) {
   const testimonial = await prisma.testimonial.findUnique({ where: { id } });
-  if (!testimonial) throw new Error("Depoimento não encontrado");
+  if (!testimonial) throw new NotFoundError("Depoimento não encontrado");
   await prisma.testimonial.delete({ where: { id } });
 }

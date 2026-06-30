@@ -1,5 +1,6 @@
 import prisma from "../../lib/prisma";
 import { CreateServiceInput, UpdateServiceInput } from "./services.schema";
+import { NotFoundError } from "../../lib/errors";
 
 export async function listServices() {
   return prisma.service.findMany({
@@ -9,7 +10,7 @@ export async function listServices() {
 
 export async function getServiceById(id: number) {
   const service = await prisma.service.findUnique({ where: { id } });
-  if (!service) throw new Error("Serviço não encontrado");
+  if (!service) throw new NotFoundError("Serviço não encontrado");
   return service;
 }
 
@@ -19,14 +20,14 @@ export async function createService(data: CreateServiceInput) {
 
 export async function updateService(id: number, data: UpdateServiceInput) {
   const service = await prisma.service.findUnique({ where: { id } });
-  if (!service) throw new Error("Serviço não encontrado");
+  if (!service) throw new NotFoundError("Serviço não encontrado");
 
   return prisma.service.update({ where: { id }, data });
 }
 
 export async function deleteService(id: number) {
   const service = await prisma.service.findUnique({ where: { id } });
-  if (!service) throw new Error("Serviço não encontrado");
+  if (!service) throw new NotFoundError("Serviço não encontrado");
 
   await prisma.service.delete({ where: { id } });
 }
