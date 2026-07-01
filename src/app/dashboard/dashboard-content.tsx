@@ -492,10 +492,10 @@ export default function DashboardContent() {
                     <div>
                       <p className="font-medium text-sm">{s.title}</p>
                       <p className="text-xs text-gray-500 truncate max-w-md">{s.description}</p>
-                      <p className="text-xs text-green-700">R$ {s.price.toFixed(2)}</p>
+                      <p className="text-xs text-green-700">R$ {(s.price ?? 0).toFixed(2)}</p>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="xs" variant="outline" onClick={() => { setEditingService(s); serviceForm.reset({ title: s.title, description: s.description, price: s.price }); }}>Editar</Button>
+                      <Button size="xs" variant="outline" onClick={() => { setEditingService(s); serviceForm.reset({ title: s.title, description: s.description, price: s.price ?? 0 }); }}>Editar</Button>
                       <Button size="xs" variant="destructive" onClick={() => deleteService(s.id)}>Excluir</Button>
                     </div>
                   </div>
@@ -797,7 +797,7 @@ export default function DashboardContent() {
                     >
                       <option value="" disabled>Adicionar serviço...</option>
                       {availableServices.map((s) => (
-                        <option key={s.id} value={s.id}>{s.title} — R$ {s.price.toFixed(2)}</option>
+                        <option key={s.id} value={s.id}>{s.title} — R$ {(s.price ?? 0).toFixed(2)}</option>
                       ))}
                     </select>
                   </div>
